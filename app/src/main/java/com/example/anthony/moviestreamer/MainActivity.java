@@ -5,9 +5,15 @@ import android.os.AsyncTask;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.GridView;
+
+import com.squareup.picasso.Picasso;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -17,12 +23,18 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Array;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 
 public class MainActivity extends ActionBarActivity {
+    public ArrayAdapter<String> movieImageAdapter;
+    public ArrayAdapter<String> movieTitleAdapter;
+    public List<JSONArray> resultHolder;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,8 +51,25 @@ public class MainActivity extends ActionBarActivity {
     }
 
     @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState){
+        movieImageAdapter =
+                new ArrayAdapter<String>(
+                        this, // The current context (this activity)
+                        R.layout.grid_item_layout, // The name of the layout ID.
+                        R.id.image, // The ID of the textview to populate.
+                        new ArrayList<String>());
+        movieTitleAdapter =
+                new ArrayAdapter<String>(
+                        this, // The current context (this activity)
+                        R.layout.grid_item_layout, // The name of the layout ID.
+                        R.id.text, // The ID of the textview to populate.
+                        new ArrayList<String>());
+    }
+
+    @Override
     public void updateSort(){
-        
+
     }
 
     @Override
@@ -63,7 +92,7 @@ public class MainActivity extends ActionBarActivity {
         private final String LOG_TAG = FetchMovieData.class.getSimpleName();
 
 
-        private String getMovieDataFromJson(String movieJsonStr)
+        private String[] getMovieDataFromJson(String movieJsonStr)
                 throws JSONException{
             //Json objects needed from results
             final String QUERY_RESULTS = "results";
@@ -78,6 +107,14 @@ public class MainActivity extends ActionBarActivity {
             JSONArray movieArray = holder.getJSONArray(QUERY_RESULTS);
 
             resultStrs = new String[movieArray.length()];
+            resultHolder = new ArrayList<JSONArray>();
+            for (int i = 0;i < movieArray.length(); i++){
+                String title;
+                JSONObject movieResult = movieArray.getJSONObject(i);
+                title = movieResult.getJSONObject(TITLE).toString();
+                resultHolder.add(movieArray.getJSONArray(i));
+                resultStrs[i] = title;
+            }
 
 
 
@@ -159,6 +196,14 @@ public class MainActivity extends ActionBarActivity {
             //this will happen only if there was an error getting or parsing the output
             return null;
 
+        }
+        protected void onPostExecute(String[] strings){
+            movieTitleAdapter.clear();
+            movieImageAdapter.clear();
+            for(int i= 0; i < resultStrs.length;i++){
+                movieTitleAdapter.add(resultStrs[i]);
+
+            }
         }
     }
 }
