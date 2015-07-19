@@ -57,7 +57,7 @@ public class MainActivity extends ActionBarActivity {
             }
         });
 
-        updateSort();
+        updateSort("popularity.desc");
     }
 
     @Override
@@ -68,9 +68,9 @@ public class MainActivity extends ActionBarActivity {
         return true;
     }
 
-    public void updateSort(){
+    public void updateSort(String sort){
         FetchMovieData getData = new FetchMovieData();
-        getData.execute("popularity.desc");
+        getData.execute(sort);
     }
 
     @Override
@@ -83,6 +83,12 @@ public class MainActivity extends ActionBarActivity {
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             return true;
+        }
+        if (id == R.id.action_popular){
+            updateSort("popularity.desc");
+        }
+        if (id == R.id.action_rating){
+            updateSort("vote_average.desc");
         }
 
         return super.onOptionsItemSelected(item);
@@ -207,7 +213,6 @@ public class MainActivity extends ActionBarActivity {
         }
 
         protected void onPostExecute(String[] strings){
-            movieImageAdapter.clear();
             movieImageAdapter = new GridViewAdapter(MainActivity.this, R.layout.grid_item_layout, resultStrs);
             gridView.setAdapter(movieImageAdapter);
         }
