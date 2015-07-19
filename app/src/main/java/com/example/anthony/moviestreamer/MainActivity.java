@@ -1,5 +1,6 @@
 package com.example.anthony.moviestreamer;
 
+import android.content.Context;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.support.v7.app.ActionBarActivity;
@@ -10,8 +11,11 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.GridView;
+import android.widget.Toast;
+import android.widget.AdapterView.OnItemClickListener;
 
 import com.squareup.picasso.Picasso;
 
@@ -32,14 +36,28 @@ import java.util.Map;
 
 
 public class MainActivity extends ActionBarActivity {
-    public ArrayAdapter<String> movieImageAdapter;
-    public ArrayAdapter<String> movieTitleAdapter;
+    public GridViewAdapter movieImageAdapter;
+    private GridView gridView;
     public List<JSONArray> resultHolder;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        movieImageAdapter = new GridViewAdapter(MainActivity.this, R.layout.grid_item_layout, new resultData[0] );
+        gridView = (GridView) findViewById(R.id.gridView);
+        gridView.setAdapter(movieImageAdapter);
+        gridView.setOnItemClickListener(new OnItemClickListener() {
+            public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
+                Context context = getApplicationContext();
+                String test = "Test Toast!";
+                Toast toast = Toast.makeText(context, test, Toast.LENGTH_LONG);
+                toast.show();
+            }
+        });
+
+        updateSort();
     }
 
     @Override
@@ -50,26 +68,9 @@ public class MainActivity extends ActionBarActivity {
         return true;
     }
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState){
-        movieImageAdapter =
-                new ArrayAdapter<String>(
-                        this, // The current context (this activity)
-                        R.layout.grid_item_layout, // The name of the layout ID.
-                        R.id.image, // The ID of the textview to populate.
-                        new ArrayList<String>());
-        movieTitleAdapter =
-                new ArrayAdapter<String>(
-                        this, // The current context (this activity)
-                        R.layout.grid_item_layout, // The name of the layout ID.
-                        R.id.text, // The ID of the textview to populate.
-                        new ArrayList<String>());
-    }
-
-    @Override
     public void updateSort(){
-
+        FetchMovieData getData = new FetchMovieData();
+        getData.execute("popularity.desc");
     }
 
     @Override
@@ -88,12 +89,14 @@ public class MainActivity extends ActionBarActivity {
     }
 
     public class FetchMovieData extends AsyncTask<String, Void, String[]>{
-        public String[] resultStrs;
+        resultData[] resultStrs;
         private final String LOG_TAG = FetchMovieData.class.getSimpleName();
+
 
 
         private String[] getMovieDataFromJson(String movieJsonStr)
                 throws JSONException{
+
             //Json objects needed from results
             final String QUERY_RESULTS = "results";
             final String BACKGROUND_IMAGE = "backdrop_path";
@@ -102,22 +105,27 @@ public class MainActivity extends ActionBarActivity {
             final String RELEASE_DATE = "release_date";
             final String IMAGE = "poster_path";
             final String VOTE = "vote_average";
+            final String IMAGE_PATH_BASE = "http://image.tmdb.org/t/p/w185/";
 
             JSONObject holder = new JSONObject(movieJsonStr);
             JSONArray movieArray = holder.getJSONArray(QUERY_RESULTS);
-
-            resultStrs = new String[movieArray.length()];
+            resultStrs = new resultData[movieArray.length()];
             resultHolder = new ArrayList<JSONArray>();
             for (int i = 0;i < movieArray.length(); i++){
                 String title;
+                String poster;
+                String image;
+
                 JSONObject movieResult = movieArray.getJSONObject(i);
-                title = movieResult.getJSONObject(TITLE).toString();
-                resultHolder.add(movieArray.getJSONArray(i));
-                resultStrs[i] = title;
+                title = movieResult.getString(TITLE);
+                image = movieResult.getString(IMAGE);
+                poster = IMAGE_PATH_BASE + image;
+
+                resultStrs[i] = new resultData(title, poster);
             }
+            String[] tempResults = new String[0];
 
-
-
+            return tempResults;
         }
 
         protected String[] doInBackground(String... params){
@@ -197,13 +205,11 @@ public class MainActivity extends ActionBarActivity {
             return null;
 
         }
-        protected void onPostExecute(String[] strings){
-            movieTitleAdapter.clear();
-            movieImageAdapter.clear();
-            for(int i= 0; i < resultStrs.length;i++){
-                movieTitleAdapter.add(resultStrs[i]);
 
-            }
+        protected void onPostExecute(String[] strings){
+            movieImageAdapter.clear();
+            movieImageAdapter = new GridViewAdapter(MainActivity.this, R.layout.grid_item_layout, resultStrs);
+            gridView.setAdapter(movieImageAdapter);
         }
     }
 }
